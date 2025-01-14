@@ -9,9 +9,10 @@ import argparse
 def extract_data(pcap_dir, output_csv, num_lines):
     pcap_files = [f for f in os.listdir(pcap_dir) if f.endswith('.pcapng')]
 
-    # Set to store unique (source, destination, protocol) tuples
+    # Set to store unique tuples
     unique_entries = set()
 
+    # Loop through the files
     for pcap_file in pcap_files:
         file = os.path.join(pcap_dir, pcap_file)
         print("Opening {0}".format(file))
@@ -24,8 +25,6 @@ def extract_data(pcap_dir, output_csv, num_lines):
         # Loop through the packets in the pcapng file
         for packet in cap:
             #print (packet)
-            #if packet.eth.type == 0x8892:
-            #    entry =
 
             eth_type = packet.eth.type
             eth_src = packet.eth.src
@@ -49,18 +48,20 @@ def extract_data(pcap_dir, output_csv, num_lines):
                     ip_src_port = packet.udp.srcport
                     ip_dst_port = packet.udp.dstport
 
+            # Add entry when not existing
             entry = (eth_type, eth_src, eth_dst, protocol, ip_src, ip_dst, ip_proto, ip_src_port, ip_dst_port)
-
             if (entry not in unique_entries):
                 unique_entries.add(entry)
                 print(entry)
 
+            # Logging and limitation
             line += 1
             #if line % 1000 == 0:
                 #print("{}, {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), line))
             if line == num_lines:
                 break
 
+        # Close pcap
         cap.close()
 
     # Write the unique data to a CSV file

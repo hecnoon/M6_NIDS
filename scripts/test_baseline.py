@@ -18,13 +18,16 @@ def read_csv(csv_file):
     return unique_entries
 
 # Function to check pcap file entries not in the CSV
-def check_pcap_against_csv(pcap_file, csv_file, num_lines):
+def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
     # Read entries from the CSV file
     csv_entries = read_csv(csv_file)
 
     print(f"Opening {pcap_file}")
     cap = pyshark.FileCapture(pcap_file)
     print(f"Opened {pcap_file}")
+
+    # Set to store detected anomalies
+    anomalies = set()
 
     line = 0
 
@@ -57,6 +60,7 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines):
 
         # Check if the entry from pcap is in the CSV entries
         if entry not in csv_entries:
+            anomalies.add(entry)
             print(f"New entry found: {entry}")
 
         line += 1
@@ -64,6 +68,13 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines):
             break
 
     cap.close()
+
+    # Write the unique data to a CSV file
+    with open(output_csv, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["eth_type", "eth_src", "eth_dst", "protocol", "ip_src", "ip_dst", "ip_proto", "ip_src_port", "ip_dst_port"])
+        for entry in anomalies:
+            writer.writerow(entry)
 
 
 # Main function to handle command-line arguments
@@ -74,10 +85,11 @@ def main():
     parser.add_argument('pcap_file', type=str, help="Path to the pcapng file")
     parser.add_argument('csv_file', type=str, help="Path to the CSV file")
     parser.add_argument('num_lines', type=int, help="Number of lines (packets) to read from the pcap file")
+    parser.add_argument('output_csv', type=str, help="CSV file to write anomalies to")
 
     args = parser.parse_args()
 
-    check_pcap_against_csv(args.pcap_file, args.csv_file, args.num_lines)
+    check_pcap_against_csv(args.pcap_file, args.csv_file, args.num_lines, args.output_csv)
 
 
 if __name__ == "__main__":
