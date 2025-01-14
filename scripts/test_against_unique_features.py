@@ -53,7 +53,7 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
             if 'TCP' in packet:
                 ip_src_port = packet.tcp.srcport
                 ip_dst_port = packet.tcp.dstport
-            else:
+            elif 'UDP' in packet:
                 ip_src_port = packet.udp.srcport
                 ip_dst_port = packet.udp.dstport
 
@@ -61,7 +61,7 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
                  str(ip_dst_port))
 
         # Check if the entry from pcap is in the CSV entries
-        if entry not in csv_entries:
+        if entry not in csv_entries and entry not in anomalies:
             anomalies.add(entry)
             print(f"New entry found: {entry}")
 
