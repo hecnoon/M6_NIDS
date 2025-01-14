@@ -1,4 +1,6 @@
 import os
+from datetime import datetime
+
 import pyshark
 import csv
 import argparse
@@ -64,6 +66,8 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
             print(f"New entry found: {entry}")
 
         line += 1
+        if line % 50000 == 0:
+            print("{}, {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), line))
         if line == num_lines:
             break
 
