@@ -1,6 +1,5 @@
 from datetime import datetime
 import os
-
 import pyshark
 import csv
 import argparse
@@ -10,7 +9,7 @@ def extract_data(pcap_dir, output_csv, num_lines):
     pcap_files = [f for f in os.listdir(pcap_dir) if f.endswith('.pcapng')]
 
     # Set to store unique tuples
-    unique_entries = set()
+    unique_entries = {}
 
     # Loop through the files
     for pcap_file in pcap_files:
@@ -50,14 +49,20 @@ def extract_data(pcap_dir, output_csv, num_lines):
 
             # Add entry when not existing
             entry = (eth_type, eth_src, eth_dst, protocol, ip_src, ip_dst, ip_proto, ip_src_port, ip_dst_port)
-            if (entry not in unique_entries):
-                unique_entries.add(entry)
+            if entry not in unique_entries:
+                unique_entries[entry] = {"occurrences": 1,
+                                      "capfiles": {pcap_file}}
                 print(entry)
+            else:
+                entry = unique_entries[entry]
+                entry["occurrences"] += 1
+                if pcap_file not in entry["capfiles"]:
+                    entry["capfiles"].add(pcap_file)
 
             # Logging and limitation
             line += 1
-            #if line % 1000 == 0:
-                #print("{}, {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), line))
+            if line % 50000 == 0:
+                print("{}, {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), line))
             if line == num_lines:
                 break
 
@@ -67,9 +72,10 @@ def extract_data(pcap_dir, output_csv, num_lines):
     # Write the unique data to a CSV file
     with open(output_csv, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["eth_type", "eth_src", "eth_dst", "protocol", "ip_src", "ip_dst", "ip_proto", "ip_src_port", "ip_dst_port"])
-        for entry in unique_entries:
-            writer.writerow(entry)
+        writer.writerow(["eth_type", "eth_src", "eth_dst", "protocol", "ip_src", "ip_dst", "ip_proto", "ip_src_port", "ip_dst_port", "occurrences", "capfiles"])
+        for entry, metadata in unique_entries.items():
+            row = entry + tuple({metadata["occurrences"]}) + tuple({'; '.join(metadata["capfiles"])})
+            writer.writerow(row)
 
 # Main function to handle command-line arguments
 def main():

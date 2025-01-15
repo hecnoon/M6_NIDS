@@ -14,7 +14,7 @@ def read_csv(csv_file):
         # Skip header
         next(reader)
         for row in reader:
-            entry = tuple(row)  # Convert each row into a tuple for comparison
+            entry = tuple(row[:9])  # Convert each row into a tuple for comparison
             unique_entries.add(entry)
 
     return unique_entries
