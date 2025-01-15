@@ -19,10 +19,10 @@ python get_unique_features.py ../data/train/ unique_features.csv 10000
 The output is now written to unique_features.csv  
 10000 packets are inspected, use -1 to inspect all
 
-To test the baseline run:
+To test a cab file against a set of features run:
 ```
-python test_baseline.py ../data/Baseline\ 6-1-2025\ 1\ uur\ capture.pcapng unique_features.csv 1000000 anomalies.csv
+python test_against_unique_features.py ../data/Baseline\ 6-1-2025\ 1\ uur\ capture.pcapng unique_features.csv 1000000 anomalies.csv
 ```
-The baseline from the data directory is scanned for "anomalies" based on unique_features.csv  
+The given file from the data directory is scanned for "anomalies" based on unique_features.csv  
 1000000 packets are inspected, use -1 to inspect all
 The output is written to anomalies.csv  
