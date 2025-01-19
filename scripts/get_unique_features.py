@@ -53,8 +53,8 @@ def extract_data(pcap_dir, output_csv, num_lines):
     with open(output_csv, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["eth_type", "eth_src", "eth_dst", "protocol", "ip_src", "ip_dst", "ip_proto", "ip_src_port", "ip_dst_port", "occurrences", "capfiles"])
-        for entry, metadata in unique_entries.items():
-            row = entry + tuple({metadata["occurrences"]}) + tuple({'; '.join(metadata["capfiles"])})
+        for feature, metadata in unique_entries.items():
+            row = feature + tuple({metadata["occurrences"]}) + tuple({'; '.join(metadata["capfiles"])})
             writer.writerow(row)
 
 # Main function to handle command-line arguments
