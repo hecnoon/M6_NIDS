@@ -28,7 +28,7 @@ def get_entry(packet):
             else:
                 ip_src_port = packet.tcp.srcport
                 ip_dst_port = packet.tcp.dstport
-        else:
+        elif 'UDP' in packet:
             # UDP traffic which is profinet does not have a fixed portnr
             if protocol != "PN_IO_DEVICE" and protocol != "PN_IO_CONTROLLER":
                 ip_src_port = packet.udp.srcport
