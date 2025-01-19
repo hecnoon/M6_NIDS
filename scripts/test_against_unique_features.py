@@ -41,8 +41,7 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
         # Check if the entry from pcap is in the CSV entries
         if entry not in csv_entries:
             if entry not in anomalies:
-                anomalies[entry] = {"occurrences": 1,
-                                    "first_occurence": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+                anomalies[entry] = {"occurrences": 1}
                 print(entry)
             else:
                 entry = anomalies[entry]
@@ -61,7 +60,7 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
         writer = csv.writer(file)
         writer.writerow(["eth_type", "eth_src", "eth_dst", "protocol", "ip_src", "ip_dst", "ip_proto", "ip_src_port", "ip_dst_port", "occurrences", "first_occurence"])
         for entry, metadata in anomalies.items():
-            row = entry + tuple({metadata["occurrences"]}) + tuple({metadata["first_occurence"]})
+            row = entry + tuple({metadata["occurrences"]})
             writer.writerow(row)
 
 
