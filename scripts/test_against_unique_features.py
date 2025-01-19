@@ -1,9 +1,8 @@
-import os
 from datetime import datetime
-
 import pyshark
 import csv
 import argparse
+from entry import get_entry
 
 # Function to read CSV file and store entries in a set
 def read_csv(csv_file):
@@ -29,54 +28,25 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
     print(f"Opened {pcap_file}")
 
     # Set to store detected anomalies
-    anomalies = set()
+    anomalies = {}
 
     line = 0
 
     # Loop through the packets in the pcapng file
     for packet in cap:
-        eth_type = packet.eth.type
-        eth_src = packet.eth.src
-        eth_dst = packet.eth.dst
-
-        # Skip host PC traffic
-        if eth_src == "0c:37:96:c3:0c:f3" or eth_src == "9c:7b:ef:76:62:66" or eth_src == "08:00:27:54:05:b6":
+        entry = get_entry(packet)
+        if not entry:
             continue
 
-        protocol = packet.highest_layer
-        ip_proto = 0
-        ip_src = "0.0.0.0"
-        ip_dst = "0.0.0.0"
-        ip_dst_port = 0
-        ip_src_port = 0
-
-        if 'IP' in packet:
-            ip_proto = packet.ip.proto
-            ip_src = packet.ip.src
-            ip_dst = packet.ip.dst
-
-            if 'TCP' in packet:
-                # Download, should always be port 102 as src or destination
-                if packet.tcp.srcport == "102":
-                    ip_src_port = packet.tcp.srcport
-                elif packet.tcp.dstport == "102":
-                    ip_dst_port = packet.tcp.dstport
-                else:
-                    ip_src_port = packet.tcp.srcport
-                    ip_dst_port = packet.tcp.dstport
-            else:
-                # UDP traffic which is profinet does not have a fixed portnr
-                if protocol != "PN_IO_DEVICE" and protocol != "PN_IO_CONTROLLER":
-                    ip_src_port = packet.udp.srcport
-                    ip_dst_port = packet.udp.dstport
-
-        entry = (str(eth_type), eth_src, eth_dst, protocol, ip_src, ip_dst, str(ip_proto), str(ip_src_port),
-                 str(ip_dst_port))
-
         # Check if the entry from pcap is in the CSV entries
-        if entry not in csv_entries and entry not in anomalies:
-            anomalies.add(entry)
-            print(f"New entry found: {entry}")
+        if entry not in csv_entries:
+            if entry not in anomalies:
+                anomalies[entry] = {"occurrences": 1,
+                                    "first_occurence": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+                print(entry)
+            else:
+                entry = anomalies[entry]
+                entry["occurrences"] += 1
 
         line += 1
         if line % 50000 == 0:
@@ -89,9 +59,10 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
     # Write the unique data to a CSV file
     with open(output_csv, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["eth_type", "eth_src", "eth_dst", "protocol", "ip_src", "ip_dst", "ip_proto", "ip_src_port", "ip_dst_port"])
-        for entry in anomalies:
-            writer.writerow(entry)
+        writer.writerow(["eth_type", "eth_src", "eth_dst", "protocol", "ip_src", "ip_dst", "ip_proto", "ip_src_port", "ip_dst_port", "occurrences", "first_occurence"])
+        for entry, metadata in anomalies.items():
+            row = entry + tuple({metadata["occurrences"]}) + tuple({metadata["first_occurence"]})
+            writer.writerow(row)
 
 
 # Main function to handle command-line arguments
