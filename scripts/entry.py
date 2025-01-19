@@ -8,16 +8,16 @@ def get_entry(packet):
         return
 
     protocol = packet.highest_layer
-    ip_proto = 0
     ip_src = "0.0.0.0"
     ip_dst = "0.0.0.0"
-    ip_dst_port = 0
-    ip_src_port = 0
+    ip_proto = '0'
+    ip_dst_port = '0'
+    ip_src_port = '0'
 
     if 'IP' in packet:
-        ip_proto = packet.ip.proto
         ip_src = packet.ip.src
         ip_dst = packet.ip.dst
+        ip_proto = packet.ip.proto
 
         if 'TCP' in packet:
             # Download, should always be port 102 as src or destination
