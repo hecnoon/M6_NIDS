@@ -1,8 +1,11 @@
-from datetime import datetime
+import datetime
 import pyshark
 import csv
 import argparse
 from entry import get_entry
+
+consolidate = True
+consolidate_threshold_seconds = 5
 
 # Function to read CSV file and store entries in a set
 def read_csv(csv_file):
@@ -40,16 +43,50 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
 
         # Check if the entry from pcap is in the CSV entries
         if entry not in csv_entries:
-            if entry not in anomalies:
-                anomalies[entry] = {"occurrences": 1}
-                print(entry)
-            else:
+            #At this point we know that the package is not in the unique features set
+
+            detected = False
+
+            if entry in anomalies:
+                #We have an exact match
+                detected = True
                 entry = anomalies[entry]
                 entry["occurrences"] += 1
+            elif consolidate:
+                #We are going to check for the same entry with differing ports
+                # If we find it and it is within a few second we consider it to be the same "anomaly"
+                entry_without_src_port = (entry[0], entry[1], entry[2], entry[3], entry[4], entry[5], entry[6], entry[8])
+                entry_without_dst_port = (entry[0], entry[1], entry[2], entry[3], entry[4], entry[5], entry[6], entry[7])
+                for anomaly, metadata in anomalies.items():
+                    anomaly_without_src_port = (anomaly[0], anomaly[1], anomaly[2], anomaly[3], anomaly[4], anomaly[5], anomaly[6], anomaly[8])
+                    anomaly_without_dst_port = (anomaly[0], anomaly[1], anomaly[2], anomaly[3], anomaly[4], anomaly[5], anomaly[6], anomaly[7])
+                    previous_sniff_time = metadata["sniff_time"]
+
+                    if anomaly_without_dst_port == entry_without_dst_port:
+                        # Source is same
+                        if packet.sniff_time < previous_sniff_time + datetime.timedelta(seconds=consolidate_threshold_seconds):
+                            detected = True
+                            metadata["src_port_same"] += 1
+                            metadata["sniff_time"] = packet.sniff_time
+                        break
+                    elif anomaly_without_src_port == entry_without_src_port:
+                        #Destination is same
+                        if packet.sniff_time < previous_sniff_time + datetime.timedelta(seconds=consolidate_threshold_seconds):
+                            detected = True
+                            metadata["dst_port_same"] += 1
+                            metadata["sniff_time"] = packet.sniff_time
+                        break
+
+            if not detected:
+                anomalies[entry] = {"occurrences": 1,
+                                    "src_port_same": 0,
+                                    "dst_port_same": 0,
+                                    "sniff_time": packet.sniff_time}
+                print(entry)
 
         line += 1
         if line % 50000 == 0:
-            print("{}, {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), line))
+            print("{}, {}".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), line))
         if line == num_lines:
             break
 
@@ -58,9 +95,9 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
     # Write the unique data to a CSV file
     with open(output_csv, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["eth_type", "eth_src", "eth_dst", "protocol", "ip_src", "ip_dst", "ip_proto", "ip_src_port", "ip_dst_port", "occurrences", "first_occurence"])
-        for entry, metadata in anomalies.items():
-            row = entry + tuple({metadata["occurrences"]})
+        writer.writerow(["eth_type", "eth_src", "eth_dst", "protocol", "ip_src", "ip_dst", "ip_proto", "ip_src_port", "ip_dst_port", "occurrences", "src_port_same", "dst_port_same"])
+        for anomaly, metadata in anomalies.items():
+            row = anomaly + tuple({metadata["occurrences"]}) + tuple({metadata["src_port_same"]}) + tuple({metadata["dst_port_same"]})
             writer.writerow(row)
 
 
@@ -72,11 +109,14 @@ def main():
     parser.add_argument('pcap_file', type=str, help="Path to the pcapng file")
     parser.add_argument('csv_file', type=str, help="Path to the CSV file")
     parser.add_argument('num_lines', type=int, help="Number of lines (packets) to read from the pcap file")
-    parser.add_argument('output_csv', type=str, help="CSV file to write anomalies to")
+    parser.add_argument('-o', type=str, help="CSV file to write anomalies to")
 
     args = parser.parse_args()
 
-    check_pcap_against_csv(args.pcap_file, args.csv_file, args.num_lines, args.output_csv)
+    if not args.o:
+        args.o = args.pcap_file.replace(".pcapng", ".csv")
+
+    check_pcap_against_csv(args.pcap_file, args.csv_file, args.num_lines, args.o)
 
 
 if __name__ == "__main__":
