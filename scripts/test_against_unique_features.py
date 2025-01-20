@@ -5,7 +5,7 @@ import argparse
 from entry import get_entry
 
 consolidate = True
-consolidate_threshold_seconds = 5
+consolidate_threshold_seconds = 1
 
 # Function to read CSV file and store entries in a set
 def read_csv(csv_file):
