@@ -55,23 +55,6 @@ def extract_data(pcap_dir, output_csv, num_lines):
                     #Set all the protocols to TCP for obvious reasons
                     protocol = 'TCP'
                     ip_dst_port = packet.tcp.dstport
-                    entry = (eth_type, eth_src, eth_dst, protocol, ip_src, ip_dst, ip_proto, ip_src_port, ip_dst_port)
-
-                    # Add entry when not existing
-                    if entry not in unique_entries:
-                        unique_entries[entry] = {"occurrences": 1,
-                                                 "capfiles": {pcap_file}}
-                        print(entry)
-
-                    #Add another entry, reversing it
-                    entry = (eth_type, eth_dst, eth_src, protocol, ip_dst, ip_src, ip_proto, ip_dst_port, ip_src_port)
-                    if entry not in unique_entries:
-                        unique_entries[entry] = {"occurrences": 1,
-                                                 "capfiles": {pcap_file}}
-                        print(entry)
-
-                    #Go to the next packet
-                    continue
 
                 elif 'UDP' in packet:
                     # UDP traffic which is profinet does not have a fixed portnr

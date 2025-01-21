@@ -51,8 +51,7 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
         ip_proto = '0'
         ip_dst_port = '0'
         ip_src_port = '0'
-
-        entry = (eth_type, eth_src, eth_dst, protocol, ip_src, ip_dst, ip_proto, ip_src_port, ip_dst_port)
+        ip_stream = -1
 
         if 'IP' in packet:
             ip_src = packet.ip.src
@@ -60,14 +59,13 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
             ip_proto = packet.ip.proto
 
             if 'TCP' in packet:
+                ip_stream = packet.tcp.stream
+                if ip_stream in ip_streams:
+                    continue
+
                 # Set all the protocols to TCP for obvious reasons
                 protocol = 'TCP'
-                ip_src_port = packet.tcp.srcport
                 ip_dst_port = packet.tcp.dstport
-                entry = (eth_type, eth_src, eth_dst, protocol, ip_src, ip_dst, ip_proto, ip_src_port, '0')
-                if entry not in csv_entries:
-                    #What the HACK, but it works
-                    entry = (eth_type, eth_src, eth_dst, protocol, ip_src, ip_dst, ip_proto, '0', ip_dst_port)
 
             elif 'UDP' in packet:
                 # UDP traffic which is profinet does not have a fixed portnr
@@ -75,16 +73,19 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
                     ip_src_port = packet.udp.srcport
                     ip_dst_port = packet.udp.dstport
 
-                entry = (eth_type, eth_src, eth_dst, protocol, ip_src, ip_dst, ip_proto, ip_src_port, ip_dst_port)
+        entry = (eth_type, eth_src, eth_dst, protocol, ip_src, ip_dst, ip_proto, ip_src_port, ip_dst_port)
 
         # Check if the entry from pcap is in the CSV entries
-        if entry not in csv_entries:
+        if entry in csv_entries:
+            if ip_stream != -1:
+                ip_streams.append(ip_stream)
+        else:
             #At this point we know that the package is not in the unique features set
-            detected = False
+            already_detected = False
 
             if entry in anomalies:
                 #We have an exact match
-                detected = True
+                already_detected = True
                 entry = anomalies[entry]
                 entry["occurrences"] += 1
             elif consolidate:
@@ -100,18 +101,18 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
                             seconds=consolidate_threshold_seconds):
                         if anomaly_without_dst_port == entry_without_dst_port:
                             # Source is same
-                            detected = True
+                            already_detected = True
                             metadata["src_port_same"] += 1
                             metadata["sniff_time"] = packet.sniff_time
                             break
                         elif anomaly_without_src_port == entry_without_src_port:
                             #Destination is same
-                            detected = True
+                            already_detected = True
                             metadata["dst_port_same"] += 1
                             metadata["sniff_time"] = packet.sniff_time
                             break
 
-            if not detected:
+            if not already_detected:
                 anomalies[entry] = {"occurrences": 1,
                                     "src_port_same": 0,
                                     "dst_port_same": 0,
