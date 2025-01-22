@@ -5,7 +5,7 @@ import argparse
 from entry import get_entry
 
 consolidate = True
-consolidate_threshold_seconds = 1
+consolidate_threshold_seconds = 2
 
 # Function to read CSV file and store entries in a set
 def read_csv(csv_file):
@@ -32,6 +32,7 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
 
     ip_streams = []
     anomalies = {}
+    no_anomalies = {}
 
     line = 0
 
@@ -77,15 +78,23 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
 
         # Check if the entry from pcap is in the CSV entries
         if entry in csv_entries:
+            #If it is then future packets within the same stream are valid
             if ip_stream != -1:
                 ip_streams.append(ip_stream)
+
+            #Here we should add it to the no_anomalies list
+            if entry in no_anomalies:
+                entry = no_anomalies[entry]
+                entry["occurrences"] += 1
+            else:
+                no_anomalies[entry] = {"occurrences": 1}
         else:
             #At this point we know that the package is not in the unique features set
-            already_detected = False
+            already_detected_before = False
 
             if entry in anomalies:
-                #We have an exact match
-                already_detected = True
+                #We have an exact match with an earlier anomaly
+                already_detected_before = True
                 entry = anomalies[entry]
                 entry["occurrences"] += 1
             elif consolidate:
@@ -96,23 +105,24 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
                 for anomaly, metadata in anomalies.items():
                     anomaly_without_src_port = (anomaly[0], anomaly[1], anomaly[2], anomaly[3], anomaly[4], anomaly[5], anomaly[6], anomaly[8])
                     anomaly_without_dst_port = (anomaly[0], anomaly[1], anomaly[2], anomaly[3], anomaly[4], anomaly[5], anomaly[6], anomaly[7])
+
                     previous_sniff_time = metadata["sniff_time"]
-                    if packet.sniff_time < previous_sniff_time + datetime.timedelta(
-                            seconds=consolidate_threshold_seconds):
+                    if packet.sniff_time < previous_sniff_time + datetime.timedelta(seconds=consolidate_threshold_seconds):
                         if anomaly_without_dst_port == entry_without_dst_port:
                             # Source is same
-                            already_detected = True
+                            already_detected_before = True
                             metadata["src_port_same"] += 1
                             metadata["sniff_time"] = packet.sniff_time
                             break
                         elif anomaly_without_src_port == entry_without_src_port:
                             #Destination is same
-                            already_detected = True
+                            already_detected_before = True
                             metadata["dst_port_same"] += 1
                             metadata["sniff_time"] = packet.sniff_time
                             break
 
-            if not already_detected:
+            if not already_detected_before:
+                #This is anew anomaly
                 anomalies[entry] = {"occurrences": 1,
                                     "src_port_same": 0,
                                     "dst_port_same": 0,
@@ -127,14 +137,21 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
 
     cap.close()
 
-    # Write the unique data to a CSV file
+    # Write the anomaly data to a CSV file
     with open(output_csv, mode='w', newline='') as file:
         writer = csv.writer(file)
+        writer.writerow(["Anomalies"])
         writer.writerow(["eth_type", "eth_src", "eth_dst", "protocol", "ip_src", "ip_dst", "ip_proto", "ip_src_port", "ip_dst_port", "occurrences", "src_port_same", "dst_port_same"])
         for anomaly, metadata in anomalies.items():
             row = anomaly + tuple({metadata["occurrences"]}) + tuple({metadata["src_port_same"]}) + tuple({metadata["dst_port_same"]})
             writer.writerow(row)
 
+        writer.writerow([""])
+        writer.writerow(["Non anomalies"])
+        writer.writerow(["eth_type", "eth_src", "eth_dst", "protocol", "ip_src", "ip_dst", "ip_proto", "ip_src_port", "ip_dst_port", "occurrences"])
+        for anomaly, metadata in no_anomalies.items():
+            row = anomaly + tuple({metadata["occurrences"]})
+            writer.writerow(row)
 
 # Main function to handle command-line arguments
 def main():
