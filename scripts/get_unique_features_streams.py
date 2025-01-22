@@ -29,8 +29,10 @@ def extract_data(pcap_dir, output_csv, num_lines):
             eth_src = packet.eth.src
             eth_dst = packet.eth.dst
 
-            # Skip host PC traffic
-            if eth_src == "0c:37:96:c3:0c:f3" or eth_src == "9c:7b:ef:76:62:66" or eth_src == "08:00:27:54:05:b6":
+            # Skip monitoring PC traffic
+            if (eth_src == "0c:37:96:c3:0c:f3" or
+                    eth_src == "9c:7b:ef:76:62:66" or
+                    eth_src == "08:00:27:54:05:b6"):
                 continue
 
             protocol = packet.highest_layer

@@ -42,8 +42,10 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
         eth_src = packet.eth.src
         eth_dst = packet.eth.dst
 
-        # Skip host PC traffic
-        if eth_src == "0c:37:96:c3:0c:f3" or eth_src == "9c:7b:ef:76:62:66" or eth_src == "08:00:27:54:05:b6":
+        # Skip monitoring PC traffic
+        if (eth_src == "0c:37:96:c3:0c:f3" or
+                eth_src == "9c:7b:ef:76:62:66" or
+                eth_src == "08:00:27:54:05:b6"):
             continue
 
         protocol = packet.highest_layer
@@ -100,11 +102,11 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
             elif consolidate:
                 #We are going to check for the same entry with differing ports
                 # If we find it and it is within a few second we consider it to be the same "anomaly"
-                entry_without_src_port = (entry[0], entry[1], entry[2], entry[3], entry[4], entry[5], entry[6], entry[8])
-                entry_without_dst_port = (entry[0], entry[1], entry[2], entry[3], entry[4], entry[5], entry[6], entry[7])
+                entry_without_src_port = eth_type, eth_src, eth_dst, protocol, ip_src, ip_dst, ip_proto, ip_dst_port
+                entry_without_dst_port = eth_type, eth_src, eth_dst, protocol, ip_src, ip_dst, ip_proto, ip_src_port
                 for anomaly, metadata in anomalies.items():
-                    anomaly_without_src_port = (anomaly[0], anomaly[1], anomaly[2], anomaly[3], anomaly[4], anomaly[5], anomaly[6], anomaly[8])
-                    anomaly_without_dst_port = (anomaly[0], anomaly[1], anomaly[2], anomaly[3], anomaly[4], anomaly[5], anomaly[6], anomaly[7])
+                    anomaly_without_src_port = anomaly[0:7] + anomaly[8:1]
+                    anomaly_without_dst_port = anomaly[0:8]
 
                     previous_sniff_time = metadata["sniff_time"]
                     if packet.sniff_time < previous_sniff_time + datetime.timedelta(seconds=consolidate_threshold_seconds):
