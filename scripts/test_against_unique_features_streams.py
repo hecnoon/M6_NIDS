@@ -146,7 +146,7 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
             row = anomaly + tuple({metadata["occurrences"]}) + tuple({metadata["src_port_same"]}) + tuple({metadata["dst_port_same"]})
             writer.writerow(row)
 
-        writer.writerow([""])
+        writer.writerow([])
         writer.writerow(["Non anomalies"])
         writer.writerow(["eth_type", "eth_src", "eth_dst", "protocol", "ip_src", "ip_dst", "ip_proto", "ip_src_port", "ip_dst_port", "occurrences"])
         for anomaly, metadata in no_anomalies.items():
