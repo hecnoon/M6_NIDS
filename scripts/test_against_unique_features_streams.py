@@ -2,7 +2,6 @@ import datetime
 import pyshark
 import csv
 import argparse
-from entry import get_entry
 
 consolidate = True
 consolidate_threshold_seconds = 2
@@ -43,10 +42,12 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
         eth_dst = packet.eth.dst
 
         # Skip monitoring PC traffic
-        if (eth_src == "08:00:27:3c:77:a5" or
-                eth_src == "0c:37:96:c3:0c:f3" or
-                eth_src == "9c:7b:ef:76:62:66" or
-                eth_src == "08:00:27:54:05:b6" or
+        if (eth_src == "08:00:27:3c:77:a5" or # kali, eth0
+                eth_src == "08:00:27:4f:bc:c1" or # kali, eth1
+                eth_src == "0c:37:96:c3:0c:f3" or # USB dongle
+                eth_src == "9c:7b:ef:76:62:66" or # host machine
+                eth_src == "08:00:27:54:05:b6" or # kali, old eth0
+                eth_dst == "08:00:27:4f:bc:c1" or
                 eth_dst == "08:00:27:3c:77:a5" or
                 eth_dst == "0c:37:96:c3:0c:f3" or
                 eth_dst == "9c:7b:ef:76:62:66" or

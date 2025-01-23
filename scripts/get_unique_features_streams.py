@@ -3,7 +3,6 @@ import os
 import pyshark
 import csv
 import argparse
-from entry import get_entry
 
 # Function to extract the source, destination, and protocol information
 def extract_data(pcap_dir, output_csv, num_lines):
@@ -29,11 +28,12 @@ def extract_data(pcap_dir, output_csv, num_lines):
             eth_src = packet.eth.src
             eth_dst = packet.eth.dst
 
-            # Skip monitoring PC traffic
-            if (eth_src == "08:00:27:3c:77:a5" or
-                    eth_src == "0c:37:96:c3:0c:f3" or
-                    eth_src == "9c:7b:ef:76:62:66" or
-                    eth_src == "08:00:27:54:05:b6" or
+            if (eth_src == "08:00:27:3c:77:a5" or  # kali, eth0
+                    eth_src == "08:00:27:4f:bc:c1" or  # kali, eth1
+                    eth_src == "0c:37:96:c3:0c:f3" or  # USB dongle
+                    eth_src == "9c:7b:ef:76:62:66" or  # host machine
+                    eth_src == "08:00:27:54:05:b6" or  # kali, old eth0
+                    eth_dst == "08:00:27:4f:bc:c1" or
                     eth_dst == "08:00:27:3c:77:a5" or
                     eth_dst == "0c:37:96:c3:0c:f3" or
                     eth_dst == "9c:7b:ef:76:62:66" or
