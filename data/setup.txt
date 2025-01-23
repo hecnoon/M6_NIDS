@@ -11,10 +11,17 @@ IP: 192.168.0.20
 MAC: 00:1b:1b:26:f3:2d
 
 Kali Monitoring
-eth0: 192.168.0.2
-eth1: 192.168.0.3
+eth0:
+IP: 192.168.0.3
 MAC: 08:00:27:3c:77:a5
+eth1:
+IP: 192.168.0.2
+MAC: 08:00:27:54:05:b6???
+
+VM Host
+MAC: 9c:7b:ef:76:62:66
 
 Maintenance PC:
 IP: 192.168.0.5
 MAC: 08:00:27:e4:41:1e
+
