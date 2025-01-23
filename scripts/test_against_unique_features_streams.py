@@ -99,12 +99,15 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
                 already_detected_before = True
                 entry = anomalies[entry]
                 entry["occurrences"] += 1
-            elif consolidate:
+            elif consolidate and (ip_src_port != '0' or ip_dst_port != '0'):
                 #We are going to check for the same entry with differing ports
                 # If we find it and it is within a few second we consider it to be the same "anomaly"
                 entry_without_src_port = eth_type, eth_src, eth_dst, protocol, ip_src, ip_dst, ip_proto, ip_dst_port
                 entry_without_dst_port = eth_type, eth_src, eth_dst, protocol, ip_src, ip_dst, ip_proto, ip_src_port
                 for anomaly, metadata in anomalies.items():
+                    if anomaly[7] == '0' and anomaly[8] == '0':
+                        continue
+
                     anomaly_without_src_port = anomaly[0:7] + anomaly[8:1]
                     anomaly_without_dst_port = anomaly[0:8]
 
