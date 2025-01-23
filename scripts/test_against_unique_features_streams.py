@@ -43,9 +43,14 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
         eth_dst = packet.eth.dst
 
         # Skip monitoring PC traffic
-        if (eth_src == "0c:37:96:c3:0c:f3" or
+        if (eth_src == "08:00:27:3c:77:a5" or
+                eth_src == "0c:37:96:c3:0c:f3" or
                 eth_src == "9c:7b:ef:76:62:66" or
-                eth_src == "08:00:27:54:05:b6"):
+                eth_src == "08:00:27:54:05:b6" or
+                eth_dst == "08:00:27:3c:77:a5" or
+                eth_dst == "0c:37:96:c3:0c:f3" or
+                eth_dst == "9c:7b:ef:76:62:66" or
+                eth_dst == "08:00:27:54:05:b6"):
             continue
 
         protocol = packet.highest_layer
