@@ -28,6 +28,7 @@ def extract_data(pcap_dir, output_csv, num_lines):
             eth_src = packet.eth.src
             eth_dst = packet.eth.dst
 
+            # Skip monitoring PC traffic
             if (eth_src == "08:00:27:3c:77:a5" or  # kali, eth0
                     eth_src == "08:00:27:4f:bc:c1" or  # kali, eth1
                     eth_src == "0c:37:96:c3:0c:f3" or  # USB dongle
@@ -46,6 +47,14 @@ def extract_data(pcap_dir, output_csv, num_lines):
             ip_proto = '0'
             ip_dst_port = '0'
             ip_src_port = '0'
+
+            if 'ARP' in packet:
+                ip_src = packet.arp.src_proto_ipv4
+                ip_dst = packet.arp.dst_proto_ipv4
+                # Skip monitoring PC traffic
+                if (ip_src == "192.168.0.3" or  # kali, eth0
+                        ip_dst == "192.168.0.3"):  # kali, eth0
+                    continue
 
             if 'IP' in packet:
                 ip_src = packet.ip.src

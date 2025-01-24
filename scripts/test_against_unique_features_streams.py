@@ -62,6 +62,14 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
         ip_src_port = '0'
         ip_stream = -1
 
+        if 'ARP' in packet:
+            ip_src = packet.arp.src_proto_ipv4
+            ip_dst = packet.arp.dst_proto_ipv4
+            # Skip monitoring PC traffic
+            if (ip_src == "192.168.0.3" or  # kali, eth0
+                    ip_dst == "192.168.0.3"):  # kali, eth0
+                continue
+
         if 'IP' in packet:
             ip_src = packet.ip.src
             ip_dst = packet.ip.dst
