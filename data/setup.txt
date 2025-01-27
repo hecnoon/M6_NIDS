@@ -1,6 +1,7 @@
 CPU:
 IP: 192.168.0.10
 MAC: 28:63:36:79:aa:b4
+MAC: 28:63:36:79:aa:b6 ???
 
 Switch:
 IP: 192.168.0.15
@@ -9,6 +10,7 @@ MAC: 38:4b:24:c9:15:f0
 Remote IO:
 IP: 192.168.0.20
 MAC: 00:1b:1b:26:f3:2d
+MAC: 00:1b:1b:26:f3:2e ???
 
 Kali Monitoring
 eth0:
