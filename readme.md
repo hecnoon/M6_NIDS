@@ -1,8 +1,10 @@
+# Siemens PROFINET OT Network Anomaly Detection Proof Of Concept
+
 ![alt text](Amnemonemomne.png)
 
 # Preperation
-Copy the pcapng files you wish to extrat "rules" from to the data/train directory (exclude the network scan pcap file)  
-Copy the baseline to the data directory  
+Copy the pcapng files you wish to extract "rules" from to the data/train directory (default some samples are included)  
+Copy the pcapng for validation and testing in the corresponding directories (default some samples are included)
 
 # Execute 
 To run the python scripts: 
@@ -21,7 +23,7 @@ The output is now written to unique_features.csv
 
 To test a cab file against a set of features run:
 ```
-python test_against_unique_features.py ../data/Baseline\ 6-1-2025\ 1\ uur\ capture.pcapng unique_features.csv 1000000 anomalies.csv
+python test_against_unique_features.py ../data/test/xxx.pcapng unique_features.csv 1000000
 ```
 The given file from the data directory is scanned for "anomalies" based on unique_features.csv  
 1000000 packets are inspected, use -1 to inspect all
