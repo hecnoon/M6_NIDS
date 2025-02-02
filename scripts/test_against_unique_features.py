@@ -2,6 +2,7 @@ import datetime
 import pyshark
 import csv
 import argparse
+from features import get_tuple
 
 consolidate = True
 consolidate_threshold_seconds = 2
@@ -37,60 +38,15 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
 
     # Loop through the packets in the pcapng file
     for packet in cap:
-        eth_type = packet.eth.type
-        eth_src = packet.eth.src
-        eth_dst = packet.eth.dst
-
-        # Skip monitoring PC traffic
-        if (eth_src == "08:00:27:3c:77:a5" or # kali, eth0
-                #eth_src == "08:00:27:4f:bc:c1" or # kali, eth1
-                eth_src == "0c:37:96:c3:0c:f3" or # USB dongle
-                eth_src == "9c:7b:ef:76:62:66" or # host machine
-                eth_src == "08:00:27:54:05:b6" or # kali, old eth0
-                eth_dst == "08:00:27:3c:77:a5" or
-                #eth_dst == "08:00:27:4f:bc:c1" or
-                eth_dst == "0c:37:96:c3:0c:f3" or
-                eth_dst == "9c:7b:ef:76:62:66" or
-                eth_dst == "08:00:27:54:05:b6"):
-            continue
-
-        protocol = packet.highest_layer
-        ip_src = "0.0.0.0"
-        ip_dst = "0.0.0.0"
-        ip_proto = '0'
-        ip_dst_port = '0'
-        ip_src_port = '0'
         ip_stream = -1
-
-        if 'ARP' in packet:
-            ip_src = packet.arp.src_proto_ipv4
-            ip_dst = packet.arp.dst_proto_ipv4
-            # Skip monitoring PC traffic
-            if (ip_src == "192.168.0.3" or  # kali, eth0
-                    ip_dst == "192.168.0.3"):  # kali, eth0
+        if 'TCP' in packet:
+            ip_stream = packet.tcp.stream
+            if ip_stream in ip_streams:
                 continue
 
-        if 'IP' in packet:
-            ip_src = packet.ip.src
-            ip_dst = packet.ip.dst
-            ip_proto = packet.ip.proto
-
-            if 'TCP' in packet:
-                ip_stream = packet.tcp.stream
-                if ip_stream in ip_streams:
-                    continue
-
-                # Set all the protocols to TCP for obvious reasons
-                protocol = 'TCP'
-                ip_dst_port = packet.tcp.dstport
-
-            elif 'UDP' in packet:
-                # UDP traffic which is profinet does not have a fixed portnr
-                if protocol != "PN_IO_DEVICE" and protocol != "PN_IO_CONTROLLER":
-                    ip_src_port = packet.udp.srcport
-                    ip_dst_port = packet.udp.dstport
-
-        entry = (eth_type, eth_src, eth_dst, protocol, ip_src, ip_dst, ip_proto, ip_src_port, ip_dst_port)
+        entry = get_tuple(packet)
+        if entry is None:
+            continue
 
         # Check if the entry from pcap is in the CSV entries
         if entry in csv_entries:
@@ -113,11 +69,11 @@ def check_pcap_against_csv(pcap_file, csv_file, num_lines, output_csv):
                 already_detected_before = True
                 entry = anomalies[entry]
                 entry["occurrences"] += 1
-            elif consolidate and (ip_src_port != '0' or ip_dst_port != '0'):
+            elif consolidate and (entry[7] != '0' or entry[8] != '0'):
                 #We are going to check for the same entry with differing ports
                 # If we find it and it is within a few second we consider it to be the same "anomaly"
-                entry_without_src_port = eth_type, eth_src, eth_dst, protocol, ip_src, ip_dst, ip_proto, ip_dst_port
-                entry_without_dst_port = eth_type, eth_src, eth_dst, protocol, ip_src, ip_dst, ip_proto, ip_src_port
+                entry_without_src_port = entry[0:7] + entry[8:1]
+                entry_without_dst_port = entry[0:8]
                 for anomaly, metadata in anomalies.items():
                     if anomaly[7] == '0' and anomaly[8] == '0':
                         continue
